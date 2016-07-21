@@ -19,4 +19,4 @@ def generate_demand_heatmap():
 
 if __name__ == "__main__":
     hmap = generate_demand_heatmap()
-    hmap.save("hmap.html")
+    hmap.save("sandbox/hmap.html")
