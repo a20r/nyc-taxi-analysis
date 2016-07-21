@@ -7,6 +7,14 @@ DATA_FILENAME = "nyc_taxi_data.csv.gz"
 DATA_PATH = DATA_DIR + DATA_FILENAME
 
 
+def get_dropoff_geos(df):
+    return df.as_matrix(["dropoff_latitude", "dropoff_longitude"])
+
+
+def get_pickup_geos(df):
+    return df.as_matrix(["pickup_latitude", "pickup_longitude"])
+
+
 def query_dates(df, start, end, header):
     qstr = "'{}' < {} < '{}'".format(str(start), str(header), str(end))
     return df.query(qstr)
