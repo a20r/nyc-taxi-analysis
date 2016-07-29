@@ -21,11 +21,11 @@ MANHATTAN_POLY = geom.Polygon([(-74.0299987793, 40.6859677292),
 
 
 def get_dropoff_geos(df):
-    return df.as_matrix(["dropoff_latitude", "dropoff_longitude"])
+    return df.as_matrix(["dropoff_longitude", "dropoff_latitude"])
 
 
 def get_pickup_geos(df):
-    return df.as_matrix(["pickup_latitude", "pickup_longitude"])
+    return df.as_matrix(["pickup_longitude", "pickup_latitude"])
 
 
 def query_dates(df, start, end, header):
