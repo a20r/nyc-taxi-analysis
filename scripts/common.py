@@ -1,6 +1,5 @@
 
 import pandas as pd
-import numpy as np
 import os.path
 import warnings
 import logging
@@ -38,6 +37,11 @@ def within_region(lons, lats):
     for lon, lat in zip(lons, lats):
         bools.append(MANHATTAN_POLY.contains(geom.Point(lon, lat)))
     return bools
+
+
+@util.profile()
+def load_data_within_time(min_time, max_time):
+    pass
 
 
 @util.profile()
