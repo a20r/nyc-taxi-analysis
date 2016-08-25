@@ -1,20 +1,20 @@
 
 import common
-import util
-from sklearn.cluster import KMeans
+
+
+def find_clusters(geos, constructor, **kwargs):
+    cl = constructor(**kwargs)
+    cl.fit(geos)
+    return cl
 
 
 #@util.profile()
-def cluster_pickups(df, **kwargs):
+def cluster_pickups(df, constructor ,**kwargs):
     pickups = common.get_pickup_geos(df)
-    ap = KMeans(**kwargs)
-    ap.fit(pickups)
-    return ap
+    return find_clusters(pickups, constructor, **kwargs)
 
 
 #@util.profile()
-def cluster_dropoffs(df, **kwargs):
+def cluster_dropoffs(df, constructor, **kwargs):
     dropoffs = common.get_dropoff_geos(df)
-    ap = KMeans(**kwargs)
-    ap.fit(dropoffs)
-    return ap
+    return find_clusters(dropoffs, constructor, **kwargs)

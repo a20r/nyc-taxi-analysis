@@ -1,6 +1,8 @@
 
 import pandas as pd
 import os.path
+import re
+import json
 import warnings
 import logging
 import util
@@ -19,6 +21,31 @@ MANHATTAN_POLY = geom.Polygon([(-74.0299987793, 40.6859677292),
                                (-74.0299987793, 40.9145503627)])
 
 
+nyc_poly = None
+
+def get_nyc_poly():
+    global nyc_poly
+    if nyc_poly is None:
+        with open("../sandbox/nyc_poly.kml") as fin:
+            data = fin.read()
+            cs = re.findall(r"<coordinates>[\s\S]*?<\/coordinates>", data)[0] \
+                .split("<coordinates>")[1]\
+                .split(",0 ")[:-2]
+            poly = list()
+            for gs in cs:
+                coords = map(float, gs.strip().split(","))
+                poly.append(coords)
+            nyc_poly = geom.Polygon(poly)
+    return nyc_poly
+
+
+def get_nyc_geojson():
+    with open("../sandbox/nyc.geo.json") as f:
+        nyc_dict = json.loads(f.read())
+        nyc_poly = geom.shape(nyc_dict["geometry"])
+        return nyc_poly
+
+
 def get_dropoff_geos(df):
     return df.as_matrix(["dropoff_longitude", "dropoff_latitude"])
 
@@ -33,9 +60,10 @@ def query_dates(df, start, end, header):
 
 
 def within_region(lons, lats):
+    nyc = get_nyc_poly()
     bools = list()
     for lon, lat in zip(lons, lats):
-        bools.append(MANHATTAN_POLY.contains(geom.Point(lon, lat)))
+        bools.append(nyc.contains(geom.Point(lon, lat)))
     return bools
 
 
