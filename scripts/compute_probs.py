@@ -8,37 +8,44 @@ from multiprocessing import Pool
 
 
 stations = pd.read_csv("data/stations.csv")
-stations_kd = KDTree(stations.as_matrix(["lon", "lat"]))
+stations_kd = KDTree(stations.as_matrix(["lng", "lat"]))
+sts = stations.as_matrix(["lng", "lat"])
 n_stations = stations.shape[0]
-df = common.load_data(nrows=10000000)
+#df = common.load_data(nrows=50000, load=True)
+df = common.load_data(nrows=30000000, load=True)
+interval_length = 15
+mins_per_day = 24 * 60
+intervals_per_day = mins_per_day / interval_length
 # 165114362
 # 10000000
 
 
 def calc_freqs(job_params):
-    freqs = np.zeros((n_stations, n_stations))
+    freqs = np.zeros((intervals_per_day, 7, n_stations, n_stations))
     j, rng = job_params
     for i in tqdm.tqdm(rng, position=j, desc="Job %d" % j,
-                       dynamic_ncols=True, miniters=10):
+                       dynamic_ncols=True, miniters=1):
         row = df.iloc[i]
+        p_dt = row["pickup_datetime"]
+        interval, wday = common.convert_date_to_interval(
+            p_dt, interval_length)
         pickup = np.array([row["pickup_longitude"],
                            row["pickup_latitude"]])
         dropoff = np.array([row["dropoff_longitude"],
                             row["dropoff_latitude"]])
         _, p_label = stations_kd.query(pickup)
         _, d_label = stations_kd.query(dropoff)
-        freqs[p_label][d_label] += 1
+        freqs[interval][wday][p_label][d_label] += 1
     return freqs
 
 
 if __name__ == "__main__":
-    pool = Pool(8)
-    arrs = np.array_split(range(df.shape[0]), 8)
+    n_workers = 8
+    pool = Pool(n_workers)
+    arrs = np.array_split(range(df.shape[0]), n_workers)
     arrs = map(list, arrs)
+    print "Computing probabilities..."
     freqs = sum(pool.map(calc_freqs, list(enumerate(arrs))))
-    #freqs = calc_freqs(arrs[0])
-    probs = freqs / freqs.sum(axis=0)
-    header = ",".join(str(i) for i in xrange(n_stations))
-    np.savetxt("data/probs.csv", probs, delimiter=",",
-               header=header, comments="")
+    print "Saving to file..."
+    np.save("data/freqs.npy", freqs)
     pool.close()

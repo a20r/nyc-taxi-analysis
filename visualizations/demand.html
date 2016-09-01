@@ -27,7 +27,6 @@
             var map;
             var probs;
             var psts;
-            var dsts;
             var heatmap;
             var marker;
 
@@ -73,16 +72,10 @@
                         probs = data;
                 });
 
-                d3.csv("pickup_stations.csv", function (d) {
+                d3.csv("stations.csv", function (d) {
                         return {lat: +d.lat, lng: +d.lng};
                     }, function(data) {
                         psts = data;
-                });
-
-                d3.csv("dropoff_stations.csv", function (d) {
-                        return {lat: +d.lat, lng: +d.lng};
-                    }, function(data) {
-                        dsts = data;
                 });
 
                 google.maps.event.addListener(map, 'click', function (ev) {
@@ -112,7 +105,7 @@
                         var hmData = new Array();
                         for (var i = 0; i < 200; i++) {
                             var loc = new google.maps.LatLng(
-                                    dsts[i].lat, dsts[i].lng);
+                                    psts[i].lat, psts[i].lng);
                             hmData.push({location: loc,
                                     weight: 100000 * probs[near_ind][i]});
                         }

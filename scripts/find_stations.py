@@ -2,7 +2,6 @@
 import sklearn.neighbors as nn
 import numpy as np
 import pandas as pd
-from scipy.spatial import KDTree
 from common import NYC_DIR
 
 
@@ -24,8 +23,8 @@ def find_clusters(geos, tol):
 if __name__ == "__main__":
     nyc_nodes = pd.read_csv(NYC_DIR.format("points"),
                             names=["id", "lat", "lon"])
-    nyc_mat = nyc_nodes.as_matrix(["lng", "lat"])
-    stations = find_clusters(nyc_mat, 0.3)
+    nyc_mat = nyc_nodes.as_matrix(["lon", "lat"])
+    stations = find_clusters(nyc_mat, 0.15)
     np.savetxt("data/stations.csv", stations, delimiter=",",
-               header="lon,lat", comments="")
+               header="lng,lat", comments="")
     print "Stations:", len(stations)
