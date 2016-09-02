@@ -200,6 +200,8 @@ namespace mod
             vector<Demand> demand_vec;
             vector<double> cum_sum;
             vector<GeoLocation> stations;
+            vector<int> station_ids;
+            unordered_map<int, GeoLocation> stations_map;
             vector<vector<double>> times;
             unordered_map<int, unordered_map<int, vector<int>>> paths;
             unordered_map<int, int> freqs;
@@ -257,6 +259,7 @@ namespace mod
             void load_stations(string fn_stations)
             {
                 double lat, lon;
+                int id;
                 ifstream data(fn_stations);
                 string line;
                 getline(data, line);
@@ -270,12 +273,16 @@ namespace mod
                     {
                         switch (counter++)
                         {
+                            case 0: id = stoi(cell);
                             case 1: lat = stof(cell);
                             case 2: lon = stof(cell);
                             default: break;
                         }
                     }
-                    stations.push_back(GeoLocation(lat, lon));
+                    GeoLocation st(lat, lon);
+                    stations.push_back(st);
+                    stations_map[id] = st;
+                    station_ids.push_back(id);
                 }
             }
 
@@ -356,7 +363,8 @@ namespace mod
                 }
             }
 
-            double get_travel_time_estimate(double lat, double lon, int station)
+            double get_travel_time_estimate(double lat, double lon,
+                    int station)
             {
                 GeoLocation gl(lat, lon);
                 int closest_station = get_station(gl);
@@ -385,7 +393,7 @@ namespace mod
                     {
                         if (dist < min_dist)
                         {
-                            min_id = i;
+                            min_id = station_ids[i];
                             min_dist = dist;
                         }
                     }
@@ -395,7 +403,7 @@ namespace mod
 
             GeoLocation get_station(int id)
             {
-                return stations[id];
+                return stations_map[id];
             }
 
             double query_demand(Demand dem)
@@ -443,8 +451,11 @@ namespace mod
                             {
                                 int freq = freqs_ma->get(
                                         inter, day, pick, drop);
+                                int pick_node = station_ids[pick];
+                                int drop_node = station_ids[drop];
                                 ref_demands.push_back(
-                                        Demand(inter, day, pick, drop));
+                                        Demand(inter, day, pick_node,
+                                            drop_node));
                                 csum.push_back(freq_sum + freq);
                                 freq_sum += freq;
                             }

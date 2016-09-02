@@ -65,6 +65,7 @@ int main() {
     mod::DemandLookup dl;
     // dl.load_stations("../data/stations.csv");
     dl.load_freqs("../data/freqs.npy");
+    dl.load_stations("../data/stations.csv");
     // dl.load_freqs("../data/freqs.csv");
     // mod::DemandLookup dl(
     //         "../data/stations.csv",

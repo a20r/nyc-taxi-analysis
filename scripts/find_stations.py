@@ -12,9 +12,10 @@ def find_clusters(geos, tol):
     centers = list()
     for i in xrange(len(geos)):
         if not used[i]:
-            st = geos[i]
+            loc = geos[i]
+            st = np.array([i, loc[0], loc[1]])
             centers.append(st)
-            nearest = ball_tree.query_radius([np.radians(st)], hav_tol)[0]
+            nearest = ball_tree.query_radius([np.radians(loc)], hav_tol)[0]
             for i in nearest:
                 used[i] = True
     return np.array(centers)
@@ -26,5 +27,5 @@ if __name__ == "__main__":
     nyc_mat = nyc_nodes.as_matrix(["lon", "lat"])
     stations = find_clusters(nyc_mat, 0.15)
     np.savetxt("data/stations.csv", stations, delimiter=",",
-               header="lng,lat", comments="")
+               header="id,lng,lat", fmt=["%d", "%.18f", "%.18f"], comments="")
     print "Stations:", len(stations)
