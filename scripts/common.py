@@ -15,6 +15,7 @@ DATA_FILENAME = "nyc_taxi_data.csv.gz"
 HDF5_FILENAME = "nyc_taxi_store.h5"
 DATA_PATH = DATA_DIR + DATA_FILENAME
 HDF5_PATH = DATA_DIR + HDF5_FILENAME
+# DATA_PATH = DATA_DIR + "nyc_small.csv"
 
 NYC_DIR = "data/nyc-graph/{}.csv"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
@@ -91,7 +92,7 @@ def clean_df(df):
 
 
 @util.profile()
-def load_data(nrows=None, load=False, chunksize=None):
+def load_data_bad(nrows=None, load=False, chunksize=None):
     warnings.simplefilter('ignore')
     need_to_reload = False
     if os.path.isfile(HDF5_PATH) and not load:
@@ -105,7 +106,7 @@ def load_data(nrows=None, load=False, chunksize=None):
             need_to_reload = True
     if not os.path.isfile(HDF5_PATH) or need_to_reload or load:
         logging.info("Loading DataFrame")
-        dfs = pd.read_csv(DATA_PATH, parse_dates=True, chunksize=chunksize
+        dfs = pd.read_csv(DATA_PATH, parse_dates=True, chunksize=chunksize,
                          infer_datetime_format=True, engine="python")
         # df = pd.read_csv(DATA_PATH, parse_dates=True, nrows=nrows,
         #                  infer_datetime_format=True, engine="python")
@@ -116,4 +117,19 @@ def load_data(nrows=None, load=False, chunksize=None):
             df.query(p_qstr, inplace=True)
             df = df[within_region(df["pickup_longitude"], df["pickup_latitude"])]
             df = df[within_region(df["dropoff_longitude"], df["dropoff_latitude"])]
-            yield df
+            return df
+
+
+@util.profile()
+def load_data(chunksize):
+    dfs = pd.read_csv(DATA_PATH, parse_dates=True, infer_datetime_format=True,
+                      chunksize=chunksize, engine="python")
+    return dfs
+    # for df in dfs:
+    #     d_qstr = "dropoff_latitude != 0 and dropoff_longitude != 0"
+    #     p_qstr = "pickup_latitude != 0 and pickup_longitude != 0"
+    #     df.query(d_qstr, inplace=True)
+    #     df.query(p_qstr, inplace=True)
+    #     df = df[within_region(df["pickup_longitude"], df["pickup_latitude"])]
+    #     df = df[within_region(df["dropoff_longitude"], df["dropoff_latitude"])]
+    #     yield df

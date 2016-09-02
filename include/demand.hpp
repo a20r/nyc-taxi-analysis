@@ -10,6 +10,7 @@
 #include <functional>
 #include <cmath>
 #include <random>
+#include "cnpy.h"
 
 using namespace std;
 
@@ -48,6 +49,70 @@ namespace mod
             }
     };
 
+    class Demand
+    {
+        public:
+            int tau, day, pickup, dropoff;
+
+            Demand() {};
+            Demand(int tau, int day, int pickup, int dropoff) :
+                tau(tau), day(day), pickup(pickup), dropoff(dropoff)
+            {
+            }
+    };
+
+    class MultiArray
+    {
+        public:
+            cnpy::NpyArray arr;
+
+            MultiArray() {}
+
+            MultiArray(cnpy::NpyArray arr) : arr(arr)
+            {
+                data = reinterpret_cast<int*>(arr.data);
+            }
+
+            ~MultiArray()
+            {
+                arr.destruct();
+                delete[] data;
+            }
+
+            int compute_index(int interval, int day, int pickup, int dropoff)
+            {
+                int D1 = arr.shape[1], D2 = arr.shape[2], D3 = arr.shape[3];
+                int index = interval * D1 * D2 * D3
+                    + day * D2 * D3 + pickup * D3 + dropoff;
+                return index;
+            }
+
+            Demand compute_coords(int index)
+            {
+                int D1 = arr.shape[0], D2 = arr.shape[1], D3 = arr.shape[2];
+                int D4 = arr.shape[3];
+                int inter = index % D1;
+                int day = ((index - inter) / D1) %  D2;
+                int pick = ((index - day * D1 - inter) / (D1 * D2)) % D3;
+                int drop = ((index - pick * D2 * D1 - day * D1 - inter)
+                        / (D1 * D2 * D3) ) % D4;
+                return Demand(inter, day, pick, drop);
+            }
+
+            int get(int index)
+            {
+                return data[index];
+            }
+
+            int get(int interval, int day, int pickup, int dropoff)
+            {
+                return get(compute_index(interval, day, pickup, dropoff));
+            }
+
+        private:
+            int *data;
+    };
+
     class Time
     {
         public:
@@ -62,18 +127,6 @@ namespace mod
             int get_interval() const
             {
                 return secs / interval_size;
-            }
-    };
-
-    class Demand
-    {
-        public:
-            int tau, day, pickup, dropoff;
-
-            Demand() {};
-            Demand(int tau, int day, int pickup, int dropoff) :
-                tau(tau), day(day), pickup(pickup), dropoff(dropoff)
-            {
             }
     };
 
@@ -150,38 +203,30 @@ namespace mod
             vector<vector<double>> times;
             unordered_map<int, unordered_map<int, vector<int>>> paths;
             unordered_map<int, int> freqs;
+            MultiArray *freqs_ma;
 
         public:
             DemandLookup() {};
-            ~DemandLookup() {};
 
-            DemandLookup(string fn_stations, string fn_probs, string fn_times,
-                    string fn_paths, string fn_freqs)
+            ~DemandLookup()
+            {}
+
+            DemandLookup(string fn_stations, string fn_freqs, string fn_times,
+                    string fn_paths)
             {
-                init(fn_stations, fn_probs, fn_times, fn_paths, fn_freqs);
+                init(fn_stations, fn_freqs, fn_times, fn_paths);
             }
 
-            void init(string fn_stations, string fn_probs, string fn_times,
-                    string fn_paths, string fn_freqs)
+            void init(string fn_stations, string fn_freqs, string fn_times,
+                    string fn_paths)
             {
-                cout << "Loading probabilities..." << endl;
-                load_probs(fn_probs);
+                cout << "Loading freqs..." << endl;
+                load_freqs(fn_freqs);
                 cout << "Loading stations..." << endl;
                 load_stations(fn_stations);
                 cout << "Loading times..." << endl;
                 load_times(fn_times);
                 cout << "Loading paths..." << endl;
-                load_paths(fn_paths);
-                cout << "Loading frequencies..." << endl;
-                load_freqs(fn_freqs);
-            }
-
-            void init(string fn_stations, string fn_probs, string fn_times,
-                    string fn_paths)
-            {
-                load_probs(fn_probs);
-                load_stations(fn_stations);
-                load_times(fn_times);
                 load_paths(fn_paths);
             }
 
@@ -203,39 +248,10 @@ namespace mod
                 reload_paths(fn_paths);
             }
 
-            void load_probs(string fn_probs)
+            void load_freqs(string fn_freqs)
             {
-                int tau, day, pickup, dropoff;
-                double prob;
-                ifstream data(fn_probs);
-                string line;
-                getline(data, line);
-
-                double lp = 0;
-                while(getline(data, line))
-                {
-                    stringstream lineStream(line);
-                    string cell;
-                    int counter = 0;
-                    while(std::getline(lineStream, cell, ','))
-                    {
-                        switch (counter++)
-                        {
-                            case 0: tau = stoi(cell);
-                            case 1: day = stoi(cell);
-                            case 2: pickup = stoi(cell);
-                            case 3: dropoff = stoi(cell);
-                            case 4: prob = stof(cell);
-                            default: break;
-                        }
-                    }
-
-                    Demand dem(tau, day, pickup, dropoff);
-                    demands[dem] = prob;
-                    demand_vec.push_back(dem);
-                    cum_sum.push_back(lp + prob);
-                    lp += prob;
-                }
+                cnpy::NpyArray arr = cnpy::npy_load(fn_freqs);
+                freqs_ma = new MultiArray(arr);
             }
 
             void load_stations(string fn_stations)
@@ -315,32 +331,6 @@ namespace mod
                     {
                         paths[start][end].push_back(stoi(cell));
                     }
-                }
-            }
-
-            void load_freqs(string fn_freqs)
-            {
-                int interval;
-                float expected_reqs;
-                ifstream data(fn_freqs);
-                string line;
-                getline(data, line);
-
-                while(getline(data, line))
-                {
-                    stringstream lineStream(line);
-                    string cell;
-                    int counter = 0;
-                    while(std::getline(lineStream, cell, ','))
-                    {
-                        switch (counter++)
-                        {
-                            case 0: interval = stoi(cell);
-                            case 1: expected_reqs = (int) stof(cell);
-                            default: break;
-                        }
-                    }
-                    freqs[interval] = expected_reqs;
                 }
             }
 
@@ -434,74 +424,59 @@ namespace mod
                 return query_demand(tau, day, p_st, d_st);
             }
 
-            void sample(int num, vector<double>& csum, int offset,
-                    vector<Demand>& dems)
-            {
-                for (int i = 0; i < num; i++)
-                {
-                    double rnd = (double) rand() / (double) (RAND_MAX);
-                    double r = csum[0] + (csum.back() - csum[0]) * rnd;
-                    for (size_t j = 0; j < csum.size(); j++)
-                    {
-                        if (r < csum[j])
-                        {
-                            dems.push_back(demand_vec[j + offset]);
-                            break;
-                        }
-                    }
-                }
-            }
-
             bool sample(int num, Time st, Time end, vector<Demand>& dems)
             {
-                // This returns true if something was actually sampled
-                // This only works if the probability file is sorted by time
+                int st_int = st.get_interval();
+                int end_int = end.get_interval();
+                int n_stations = freqs_ma->arr.shape[2];
                 vector<double> csum;
-                double lp = 0;
-                int offset = -1;
-                int expected_reqs = compute_number_of_samples(st, end);
-                if (num > expected_reqs)
-                {
-                    num = expected_reqs;
-                }
-                for (size_t i = 0; i < demand_vec.size(); i++)
-                {
-                    if (end <= demand_vec[i])
-                    {
-                        break;
-                    }
+                vector<Demand> ref_demands;
+                int freq_sum = 0;
 
-                    if (st <= demand_vec[i])
+                for (int inter = st_int; inter <= end_int; inter++)
+                {
+                    for (int day = st.day; day <= end.day; day++)
                     {
-                        if (offset < 0)
+                        for (int pick = 0; pick < n_stations; pick++)
                         {
-                            offset = i;
+                            for (int drop = 0; drop < n_stations; drop++)
+                            {
+                                int freq = freqs_ma->get(
+                                        inter, day, pick, drop);
+                                ref_demands.push_back(
+                                        Demand(inter, day, pick, drop));
+                                csum.push_back(freq_sum + freq);
+                                freq_sum += freq;
+                            }
                         }
-                        csum.push_back(lp + demands[demand_vec[i]]);
-                        lp += demands[demand_vec[i]];
                     }
                 }
+
                 if (csum.size() > 0)
                 {
-                    sample(num, csum, offset, dems);
+                    if (num > freq_sum / 52) {
+                        num = freq_sum / 52;
+                    }
+
+                    for (int i = 0; i < num; i++)
+                    {
+                        double rnd = (double) rand() / (double) (RAND_MAX);
+                        double r = csum[0] + (csum.back() - csum[0]) * rnd;
+                        for (size_t j = 0; j < csum.size(); j++)
+                        {
+                            if (r < csum[j])
+                            {
+                                dems.push_back(ref_demands[j]);
+                                break;
+                            }
+                        }
+                    }
                     return true;
                 }
                 else
                 {
                     return false;
                 }
-            }
-
-            int compute_number_of_samples(Time st, Time end)
-            {
-                int s_int = st.get_interval();
-                int e_int = end.get_interval();
-                int expected_reqs = 0;
-                for (int i = s_int; i <= e_int; i++)
-                {
-                    expected_reqs += freqs[i];
-                }
-                return expected_reqs;
             }
     };
 };
