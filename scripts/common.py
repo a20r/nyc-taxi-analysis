@@ -32,7 +32,7 @@ def get_metrics(n_vehicles, cap, waiting_time, predictions):
     df.reset_index(inplace=True)
 
     # REMEMBER TO REMOVE THIS SHIT
-    df = query_dates(df, "2013-05-05", "2013-05-05 01:09:00", "time")
+    # df = query_dates(df, "2013-05-05", "2013-05-05 02:06:30", "time")
     # REMEBER THIS SHIT ABOVE
 
     df["rolling_serviced_percentage"] = df["n_pickups"] \

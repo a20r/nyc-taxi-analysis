@@ -5,7 +5,7 @@ var sts;
 var heatmap;
 var marker;
 var interval = 0;
-var intervalSize = 0;
+var intervalSize = 1;
 var day = 0;
 var near_ind = 0;
 

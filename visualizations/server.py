@@ -42,14 +42,17 @@ def get_freqs(interval, day, pick):
 def get_multi_freqs(n_inters, interval, day, pick):
     if interval + n_inters > freqs.shape[0]:
         n_inters = freqs.shape[0] - interval - 1
-    data = freqs[interval:interval + n_inters][day][pick].sum(axis=0)
+    data = freqs[interval:(interval + n_inters)].sum(axis=0)[day][pick]
     days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-    time_fmt = "{} {:0>2}:{:0>2}"
+    time_fmt = "{} {:0>2}:{:0>2} - {:0>2}:{:0>2}"
+    e_interval = interval + n_inters
     hrs = interval * 15 / (60)
     secs = interval * 15 % 60
-    t = time_fmt.format(days[day], hrs, secs)
+    e_hrs = e_interval * 15 / (60)
+    e_secs = e_interval * 15 % 60
+    t = time_fmt.format(days[day], hrs, secs, e_hrs, e_secs)
     return jsonify(freqs=list(data), time=t)
 
 
 if __name__ == "__main__":
-    app.run(host="localhost", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8082, debug=True)
