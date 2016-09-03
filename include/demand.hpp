@@ -232,7 +232,7 @@ namespace mod
                 cout << "Loading paths..." << endl;
                 load_paths(fn_paths);
                 cout << "Loading nodes..." << endl;
-                load_paths(fn_nodes);
+                load_nodes(fn_nodes);
             }
 
             void init(string fn_stations, string fn_times, string fn_paths)
