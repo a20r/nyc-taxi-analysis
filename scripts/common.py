@@ -1,11 +1,8 @@
 
 import pandas as pd
 import time
-import os.path
 import re
 import json
-import warnings
-import logging
 import util
 import shapely.geometry as geom
 
@@ -15,6 +12,7 @@ DATA_FILENAME = "nyc_taxi_data.csv.gz"
 HDF5_FILENAME = "nyc_taxi_store.h5"
 DATA_PATH = DATA_DIR + DATA_FILENAME
 HDF5_PATH = DATA_DIR + HDF5_FILENAME
+NFS_PATH = "/home/wallar/nfs/data/data-sim/"
 # DATA_PATH = DATA_DIR + "nyc_small.csv"
 
 NYC_DIR = "data/nyc-graph/{}.csv"
@@ -24,6 +22,31 @@ fn_freqs_fields = ["time_interval", "day", "expected_requests"]
 fn_probs = "data/probs.csv"
 fn_freqs = "data/freqs.csv"
 nyc_poly = None
+
+
+def get_metrics(n_vehicles, cap, waiting_time, predictions):
+    m_file = NFS_PATH + "v{}-c{}-w{}-p{}/metrics_pnas.csv".format(
+        n_vehicles, cap, waiting_time, predictions)
+    df = pd.read_csv(m_file)
+    df.sort_values("time", inplace=True)
+    df.reset_index(inplace=True)
+
+    # REMEMBER TO REMOVE THIS SHIT
+    df = query_dates(df, "2013-05-05", "2013-05-05 01:09:00", "time")
+    # REMEBER THIS SHIT ABOVE
+
+    df["rolling_serviced_percentage"] = df["n_pickups"] \
+        / (df["n_pickups"] + df["n_ignored"])
+    df["mean_travel_delay"] = df["mean_delay"] - df["mean_waiting_time"]
+    df["serviced_percentage"] = df["n_pickups"].sum() / \
+        (df["n_ignored"].sum() + df["n_pickups"].sum())
+    df["km_travelled_per_car"] = df["total_km_travelled"] / df["n_vehicles"]
+    df["n_shared_perc"] = df["n_shared"] / (df["n_shared"] + df["time_pass_1"])
+    df.drop("Unnamed: 0", axis=1, inplace=True)
+    df.drop("capacity", axis=1, inplace=True)
+    df.drop("is_long", axis=1, inplace=True)
+    df.drop("n_vehicles", axis=1, inplace=True)
+    return df
 
 
 def convert_date_to_interval(str_time, interval):
@@ -64,7 +87,7 @@ def get_pickup_geos(df):
 
 
 def query_dates(df, start, end, header):
-    qstr = "'{}' < {} < '{}'".format(str(start), str(header), str(end))
+    qstr = "'{}' <= {} < '{}'".format(str(start), str(header), str(end))
     return df.query(qstr)
 
 
@@ -92,44 +115,7 @@ def clean_df(df):
 
 
 @util.profile()
-def load_data_bad(nrows=None, load=False, chunksize=None):
-    warnings.simplefilter('ignore')
-    need_to_reload = False
-    if os.path.isfile(HDF5_PATH) and not load:
-        df = pd.read_hdf(HDF5_PATH, "table")
-        actual_rows = df.shape[0]
-        if nrows < actual_rows:
-            return df.head(nrows)
-        elif nrows == actual_rows:
-            return df
-        else:
-            need_to_reload = True
-    if not os.path.isfile(HDF5_PATH) or need_to_reload or load:
-        logging.info("Loading DataFrame")
-        dfs = pd.read_csv(DATA_PATH, parse_dates=True, chunksize=chunksize,
-                         infer_datetime_format=True, engine="python")
-        # df = pd.read_csv(DATA_PATH, parse_dates=True, nrows=nrows,
-        #                  infer_datetime_format=True, engine="python")
-        for df in dfs:
-            d_qstr = "dropoff_latitude != 0 and dropoff_longitude != 0"
-            p_qstr = "pickup_latitude != 0 and pickup_longitude != 0"
-            df.query(d_qstr, inplace=True)
-            df.query(p_qstr, inplace=True)
-            df = df[within_region(df["pickup_longitude"], df["pickup_latitude"])]
-            df = df[within_region(df["dropoff_longitude"], df["dropoff_latitude"])]
-            return df
-
-
-@util.profile()
 def load_data(chunksize):
     dfs = pd.read_csv(DATA_PATH, parse_dates=True, infer_datetime_format=True,
                       chunksize=chunksize, engine="python")
     return dfs
-    # for df in dfs:
-    #     d_qstr = "dropoff_latitude != 0 and dropoff_longitude != 0"
-    #     p_qstr = "pickup_latitude != 0 and pickup_longitude != 0"
-    #     df.query(d_qstr, inplace=True)
-    #     df.query(p_qstr, inplace=True)
-    #     df = df[within_region(df["pickup_longitude"], df["pickup_latitude"])]
-    #     df = df[within_region(df["dropoff_longitude"], df["dropoff_latitude"])]
-    #     yield df

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Interactive Taxi Demand</title>
+        <meta name="viewport" content="initial-scale=1.0">
+        <meta charset="utf-8">
+        <style>
+            html, body {
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            #map {
+                height: 100%;
+            }
+            #panel {
+                position: absolute;
+                top: 5px;
+                left: 50%;
+                width: 500px;
+                margin-left: -180px;
+                z-index: 5;
+                background-color: #fff;
+                padding: 5px;
+                border: 1px solid #999;
+            }
+
+            .largeSlider {
+                width:500px;
+            }
+            /* #intervalSlider { */
+            /*     width:500px; */
+            /* } */
+            /* #daySlider { */
+            /*     width:500px; */
+            /* } */
+        </style>
+    <script src="https://code.jquery.com/jquery-3.1.0.min.js" 
+            integrity="sha256-cCueBR6CsyA4/9szpPfrX3s49M9vUU5BgtiJj06wt/s="
+            crossorigin="anonymous">
+    </script>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="js/freqs_hm.js"></script>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script src="https://maps.googleapis.com/maps/api/js?callback=initMap&libraries=visualization"
+                async defer>
+        </script>
+        <div id="panel">
+            <b><span id="timeSpan"></span></b>
+            <br/>
+
+            Day
+            <input type="range" id="daySlider" class="largeSlider"
+            oninput="changeDay(daySlider.value)"
+            min="0" max="6" step="1" value="0"></input>
+            <br/>
+
+            Time
+            <input type="range" id="intervalSlider" class="largeSlider"
+            oninput="changeInterval(intervalSlider.value)"
+            min="0" max="95" step="1" value="0"></input>
+            <br/>
+
+            Interval Size
+            <input type="range" id="intervalSizeSlider" class="largeSlider"
+            oninput="changeIntervalSize(intervalSizeSlider.value)"
+            min="1" max="95" step="1" value="0"></input>
+
+        </div>
+    </body>
+</html>
