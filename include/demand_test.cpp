@@ -17,9 +17,9 @@ void test_query(mod::DemandLookup& dl)
 
 void test_sample(mod::DemandLookup& dl)
 {
-    const int num = 50;
+    const int num = 509;
     vector<mod::Demand> dems;
-    mod::Time st(0, 0), end(0, 1800);
+    mod::Time st(0, 0), end(0, 60 * 60);
     bool could_sample = dl.sample(num, st, end, dems);
 
     cout << "==================== Sample Test ====================" << endl;

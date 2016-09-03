@@ -206,6 +206,7 @@ namespace mod
             unordered_map<int, unordered_map<int, vector<int>>> paths;
             unordered_map<int, int> freqs;
             MultiArray *freqs_ma;
+            vector<GeoLocation> nodes;
 
         public:
             DemandLookup() {};
@@ -214,13 +215,13 @@ namespace mod
             {}
 
             DemandLookup(string fn_stations, string fn_freqs, string fn_times,
-                    string fn_paths)
+                    string fn_paths, string fn_nodes)
             {
-                init(fn_stations, fn_freqs, fn_times, fn_paths);
+                init(fn_stations, fn_freqs, fn_times, fn_paths, fn_nodes);
             }
 
             void init(string fn_stations, string fn_freqs, string fn_times,
-                    string fn_paths)
+                    string fn_paths, string fn_nodes)
             {
                 cout << "Loading freqs..." << endl;
                 load_freqs(fn_freqs);
@@ -230,6 +231,8 @@ namespace mod
                 load_times(fn_times);
                 cout << "Loading paths..." << endl;
                 load_paths(fn_paths);
+                cout << "Loading nodes..." << endl;
+                load_paths(fn_nodes);
             }
 
             void init(string fn_stations, string fn_times, string fn_paths)
@@ -256,6 +259,32 @@ namespace mod
                 freqs_ma = new MultiArray(arr);
             }
 
+            void load_nodes(string fn_nodes)
+            {
+                double lat, lon;
+                ifstream data(fn_nodes);
+                string line;
+                getline(data, line);
+
+                while(getline(data, line))
+                {
+                    stringstream lineStream(line);
+                    string cell;
+                    int counter = 0;
+                    while(std::getline(lineStream, cell, ','))
+                    {
+                        switch (counter++)
+                        {
+                            case 1: lon = stof(cell);
+                            case 2: lat = stof(cell);
+                            default: break;
+                        }
+                    }
+                    GeoLocation st(lat, lon);
+                    nodes.push_back(st);
+                }
+            }
+
             void load_stations(string fn_stations)
             {
                 double lat, lon;
@@ -274,8 +303,8 @@ namespace mod
                         switch (counter++)
                         {
                             case 0: id = stoi(cell);
-                            case 1: lat = stof(cell);
-                            case 2: lon = stof(cell);
+                            case 1: lon = stof(cell);
+                            case 2: lat = stof(cell);
                             default: break;
                         }
                     }
@@ -381,9 +410,9 @@ namespace mod
             {
                 double min_dist;
                 int min_id;
-                for (size_t i = 0; i < stations.size(); i++)
+                for (size_t i = 0; i < nodes.size(); i++)
                 {
-                    double dist = stations[i].distance(gl);
+                    double dist = nodes[i].distance(gl);
                     if (i == 0)
                     {
                         min_id = 0;
@@ -393,7 +422,7 @@ namespace mod
                     {
                         if (dist < min_dist)
                         {
-                            min_id = station_ids[i];
+                            min_id = i;
                             min_dist = dist;
                         }
                     }
@@ -403,7 +432,7 @@ namespace mod
 
             GeoLocation get_station(int id)
             {
-                return stations_map[id];
+                return nodes[id];
             }
 
             double query_demand(Demand dem)
