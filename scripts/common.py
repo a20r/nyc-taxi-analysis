@@ -1,6 +1,7 @@
 
 import pandas as pd
 import time
+import glob
 import re
 import json
 import util
@@ -28,13 +29,46 @@ def get_metrics(n_vehicles, cap, waiting_time, predictions):
     m_file = NFS_PATH + "v{}-c{}-w{}-p{}/metrics_pnas.csv".format(
         n_vehicles, cap, waiting_time, predictions)
     df = pd.read_csv(m_file)
+    clean_metrics_df(df, predictions)
+    return df
+
+
+def get_metrics_day_new_data(n_vehicles, cap, waiting_time, predictions, day):
+    filename = "metrics_icra.csv"
+    folder_fmt = NFS_PATH + "v{}-c{}-w{}-p{}-{}-*"
+    folders = glob.glob(folder_fmt.format(
+        n_vehicles, cap, waiting_time, predictions, day))
+    folder = max(folders, key=lambda v: int(v.split("-")[-1]))
+    m_file = folder + "/" + filename
+    df = pd.read_csv(m_file)
+    clean_metrics_df(df, predictions)
+    return df
+
+
+def get_metrics_day(n_vehicles, cap, waiting_time, preds_, day):
+    if preds_ == -1:
+        preds = "0-nR"
+    else:
+        preds = preds_
+    if preds == 0 or preds == "0-nR":
+        m_file = NFS_PATH + "v{}-c{}-w{}-p{}/metrics_pnas.csv".format(
+            n_vehicles, cap, waiting_time, preds)
+        df = pd.read_csv(m_file)
+        df = query_dates(df, "2013-05-05", "2013-05-06", "time")
+        clean_metrics_df(df, preds_)
+        return df
+    else:
+        return get_metrics_day_new_data(
+            n_vehicles, cap, waiting_time, preds, day)
+
+
+def clean_metrics_df(df, predictions):
     df.sort_values("time", inplace=True)
     df.reset_index(inplace=True)
-
-    # REMEMBER TO REMOVE THIS SHIT
-    # df = query_dates(df, "2013-05-05", "2013-05-05 02:06:30", "time")
-    # REMEBER THIS SHIT ABOVE
-
+    if predictions == "NR":
+        df["predictions"] = -1
+    else:
+        df["predictions"] = predictions
     df["rolling_serviced_percentage"] = df["n_pickups"] \
         / (df["n_pickups"] + df["n_ignored"])
     df["mean_travel_delay"] = df["mean_delay"] - df["mean_waiting_time"]
@@ -42,11 +76,11 @@ def get_metrics(n_vehicles, cap, waiting_time, predictions):
         (df["n_ignored"].sum() + df["n_pickups"].sum())
     df["km_travelled_per_car"] = df["total_km_travelled"] / df["n_vehicles"]
     df["n_shared_perc"] = df["n_shared"] / (df["n_shared"] + df["time_pass_1"])
+    df["n_shared_per_passenger"] = df["n_shared"].sum() / df["n_pickups"].sum()
     df.drop("Unnamed: 0", axis=1, inplace=True)
     df.drop("capacity", axis=1, inplace=True)
     df.drop("is_long", axis=1, inplace=True)
-    df.drop("n_vehicles", axis=1, inplace=True)
-    return df
+    #df.drop("n_vehicles", axis=1, inplace=True)
 
 
 def convert_date_to_interval(str_time, interval):
