@@ -43,7 +43,8 @@ def get_multi_freqs(n_inters, interval, day, pick):
     if interval + n_inters > freqs.shape[0]:
         n_inters = freqs.shape[0] - interval - 1
     data = freqs[interval:(interval + n_inters)].sum(axis=0)[day][pick]
-    days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    print "Min: {}, Max: {}".format(data.min(), data.max())
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
     time_fmt = "{} {:0>2}:{:0>2} - {:0>2}:{:0>2}"
     e_interval = interval + n_inters
     hrs = interval * 15 / (60)

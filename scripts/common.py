@@ -25,20 +25,52 @@ fn_freqs = "data/freqs.csv"
 nyc_poly = None
 
 
+def get_metric_folder(vecs, cap, wt, preds, day):
+    if preds <= 0:
+        return get_old_metric_folder(vecs, cap, wt, preds, day)
+    else:
+        return get_new_metric_folder(vecs, cap, wt, preds, day)
+
+
+def get_old_metric_folder(vecs, cap, wt, preds, day):
+    if preds == -1:
+        preds = "0-nR"
+        dir_temp = ("v{0}-c{1}-w{2}-p{3}/"
+                    "v{0}-c{1}-w{2}-p0-{4}-18-2013-*")
+    else:
+        dir_temp = ("v{0}-c{1}-w{2}-p{3}/"
+                    "v{0}-c{1}-w{2}-p{3}-{4}-18-2013-*")
+    f_glob = NFS_PATH + dir_temp.format(vecs, cap, wt, preds, day)
+    folders = glob.glob(f_glob)
+    if len(folders) == 0:
+        raise ValueError()
+    return folders[0]
+
+
+def get_new_metric_folder(n_vehicles, cap, waiting_time, predictions, day):
+    folder_fmt = NFS_PATH + "v{}-c{}-w{}-p{}-{}-*"
+    f_glob = folder_fmt.format(
+        n_vehicles, cap, waiting_time, predictions, day)
+    folders = glob.glob(f_glob)
+    if len(folders) == 0:
+        raise ValueError()
+    folder = max(folders, key=lambda v: int(v.split("-")[-1]))
+    return folder
+
+
 def get_metrics(n_vehicles, cap, waiting_time, predictions):
     m_file = NFS_PATH + "v{}-c{}-w{}-p{}/metrics_pnas.csv".format(
         n_vehicles, cap, waiting_time, predictions)
     df = pd.read_csv(m_file)
+    # df = query_dates(df, "2013-05-05", "2013-05-06", "time")
     clean_metrics_df(df, predictions)
     return df
 
 
 def get_metrics_day_new_data(n_vehicles, cap, waiting_time, predictions, day):
     filename = "metrics_icra.csv"
-    folder_fmt = NFS_PATH + "v{}-c{}-w{}-p{}-{}-*"
-    folders = glob.glob(folder_fmt.format(
-        n_vehicles, cap, waiting_time, predictions, day))
-    folder = max(folders, key=lambda v: int(v.split("-")[-1]))
+    folder = get_new_metric_folder(
+        n_vehicles, cap, waiting_time, predictions, day)
     m_file = folder + "/" + filename
     df = pd.read_csv(m_file)
     clean_metrics_df(df, predictions)
@@ -54,7 +86,8 @@ def get_metrics_day(n_vehicles, cap, waiting_time, preds_, day):
         m_file = NFS_PATH + "v{}-c{}-w{}-p{}/metrics_pnas.csv".format(
             n_vehicles, cap, waiting_time, preds)
         df = pd.read_csv(m_file)
-        df = query_dates(df, "2013-05-05", "2013-05-06", "time")
+        df = query_dates(
+            df, "2013-05-05", "2013-05-0{}".format(5 + day), "time")
         clean_metrics_df(df, preds_)
         return df
     else:

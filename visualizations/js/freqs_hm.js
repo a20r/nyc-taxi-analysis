@@ -9,6 +9,23 @@ var intervalSize = 1;
 var day = 0;
 var near_ind = 0;
 
+var gradient = [
+    'rgba(0, 255, 255, 0)',
+    'rgba(0, 255, 255, 1)',
+    'rgba(0, 191, 255, 1)',
+    'rgba(0, 127, 255, 1)',
+    'rgba(0, 63, 255, 1)',
+    'rgba(0, 0, 255, 1)',
+    'rgba(0, 0, 223, 1)',
+    'rgba(0, 0, 191, 1)',
+    'rgba(0, 0, 159, 1)',
+    'rgba(0, 0, 127, 1)',
+    'rgba(63, 0, 91, 1)',
+    'rgba(127, 0, 63, 1)',
+    'rgba(191, 0, 31, 1)',
+    'rgba(255, 0, 0, 1)'
+]
+
 var rad = function(x) {
     return x * Math.PI / 180;
 };
@@ -73,16 +90,33 @@ function initMap() {
     });
 
     var marker = new google.maps.Marker({
+        icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            strokeColor: "blue",
+            scale: 6
+        },
         title: 'Pickup Station',
         map: map
     });
 
 
     heatmap = new google.maps.visualization.HeatmapLayer();
+    heatmap.set("gradient", gradient);
 
     d3.csv("stations", function (d) {
             return {lat: +d.lat, lng: +d.lng};
         }, function(data) {
+            for (var i = 0; i < data.length; i++) {
+                var marker_st = new google.maps.Marker({
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        strokeColor: "blue",
+                        scale: 3
+                    },
+                    map: map,
+                    position: data[i]
+                });
+            }
             sts = data;
     });
 
