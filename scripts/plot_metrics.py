@@ -34,7 +34,7 @@ caps = [2, 4]
 days = [1, 2]
 waiting_times = [300]
 predictions = [-1, 0, 200, 400]
-fancy_preds = ["No Rebalancing", 0, 200, 400]
+fancy_preds = ["No Rebalancing", "Reactive [2]", "200 Samples", "400 Samples"]
 # predictions = [0, 200, 400]
 # fancy_preds = [0, 200, 400]
 

@@ -80,6 +80,7 @@ def get_metrics_day_new_data(n_vehicles, cap, waiting_time, predictions, day):
 
 
 def get_metrics_day(n_vehicles, cap, waiting_time, preds_, day):
+    print n_vehicles, cap, waiting_time, preds_, day
     if preds_ == -1:
         preds = "0-nR"
     else:
