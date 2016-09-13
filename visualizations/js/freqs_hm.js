@@ -70,7 +70,7 @@ function updateHeatmap() {
                 var loc = new google.maps.LatLng(
                         sts[i].lat, sts[i].lng);
                 hmData.push({location: loc,
-                    weight: 100000 * freqs[i]});
+                    weight: freqs[i]});
             }
             heatmap.setMap(null);
             heatmap = new google.maps.visualization.HeatmapLayer({
@@ -86,7 +86,7 @@ function initMap() {
         center: {lat: 40.77638, lng: -73.96957},
         zoom: 12,
         disableDoubleClickZoom: true,
-        draggable: true
+        draggable: true,
     });
 
     var marker = new google.maps.Marker({

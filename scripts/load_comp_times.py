@@ -13,7 +13,7 @@ preds = [-1, 0, 200, 400]
 waiting_times = [300]
 vehicles = [1000, 2000, 3000]
 days = [1, 2]
-caps = [4]
+caps = [2, 4]
 
 
 def get_comp_filenames(vecs, cap, wt, preds, day):
@@ -25,16 +25,20 @@ def get_comp_filenames(vecs, cap, wt, preds, day):
 
 
 def generate_time_df():
-    cols = ["vehicles", "capacity", "waiting_time", "day", "comp_time"]
+    cols = ["vehicles", "capacity", "waiting_time", "day", "predictions",
+            "comp_time"]
     data = pd.DataFrame(columns=cols)
     counter = 0
     for v, c, wt, p, d in product(vehicles, caps, waiting_times, preds, days):
         s, e = get_comp_filenames(v, c, wt, p, d)
-        diff = (path.getctime(e) - path.getctime(s)) / 2878
-        if diff > 500:
-            diff = 2.9
-        data.loc[counter] = [v, c, wt, d - 1, diff]
-        counter += 1
+        try:
+            diff = (path.getctime(e) - path.getctime(s)) / 2878
+            if diff > 500:
+                diff = 2.9
+            data.loc[counter] = [v, c, wt, d, p, diff]
+            counter += 1
+        except OSError:
+            print s, e
     return data
 
 

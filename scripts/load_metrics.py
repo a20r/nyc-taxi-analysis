@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+import time
 import warnings
 import tqdm
 import glob
@@ -31,10 +32,9 @@ vehicles = [1000, 2000, 3000]
 caps = [2, 4]
 days = [1, 2, 3]
 waiting_times = [300]
-predictions = [200, 400, 600]
+predictions = [-1, 0, 200, 400, 600]
 total = len(vehicles) * len(caps) * len(days) * len(waiting_times) \
     * len(predictions)
-
 
 
 class PassengerData(object):
@@ -353,20 +353,25 @@ def extract_dataframe(folder):
 
 
 def extract_dataframe_subdir(dr):
-    subdir = dr + "/"
-    params = load_parameters(subdir + "parameters.txt")
-    n_vehicles = params["NUMBER_VEHICLES"]
-    cap = params["maxPassengersVehicle"]
-    rebalancing = params["USE_REBALANCING"]
-    df = extract_metrics(subdir, n_vehicles, cap, rebalancing, 1)
-    df.to_csv(subdir + "metrics_icra.csv")
-    return df
+    try:
+        subdir = dr + "/"
+        params = load_parameters(subdir + "parameters.txt")
+        n_vehicles = params["NUMBER_VEHICLES"]
+        cap = params["maxPassengersVehicle"]
+        rebalancing = params["USE_REBALANCING"]
+        df = extract_metrics(subdir, n_vehicles, cap, rebalancing, 1)
+        df.to_csv(subdir + "metrics_icra.csv")
+        return df
+    except:
+        print "error:", dr
 
 
 def extract_new_dataframes(dirs):
-    pool = Pool(8)
-    pool.map(extract_dataframe_subdir, dirs)
-    pool.close()
+    # pool = Pool(8)
+    # pool.map(extract_dataframe_subdir, dirs)
+    # pool.close()
+    for dr in dirs:
+        extract_dataframe_subdir(dr)
 
 
 def get_ready_folders(folder):
@@ -412,9 +417,9 @@ def get_dirs_to_process():
         try:
             df = common.get_metrics_day(v, c, wt, p, d)
             if df.shape[0] < 2879:
-                baddies.append(common.get_new_metric_folder(v, c, wt, p, d))
+                baddies.append(common.get_metric_folder(v, c, wt, p, d))
         except IOError:
-            baddies.append(common.get_new_metric_folder(v, c, wt, p, d))
+            baddies.append(common.get_metric_folder(v, c, wt, p, d))
         except ValueError:
             pass
     return baddies
