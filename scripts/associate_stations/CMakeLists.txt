@@ -1,0 +1,8 @@
+cmake_minimum_required (VERSION 2.6)
+project (associate_stations CXX)
+add_definitions(-std=c++11 -Wall -Wextra)
+find_package(Boost)
+include_directories(${Boost_INCLUDE_DIRS})
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+add_executable(associate_stations associate_stations.cpp)
+target_link_libraries(associate_stations ${Boost_LIBRARIES})

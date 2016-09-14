@@ -106,17 +106,17 @@ function initMap() {
     d3.csv("stations", function (d) {
             return {lat: +d.lat, lng: +d.lng};
         }, function(data) {
-            for (var i = 0; i < data.length; i++) {
-                var marker_st = new google.maps.Marker({
-                    icon: {
-                        path: google.maps.SymbolPath.CIRCLE,
-                        strokeColor: "blue",
-                        scale: 3
-                    },
-                    map: map,
-                    position: data[i]
-                });
-            }
+            // for (var i = 0; i < data.length; i++) {
+            //     var marker_st = new google.maps.Marker({
+            //         icon: {
+            //             path: google.maps.SymbolPath.CIRCLE,
+            //             strokeColor: "blue",
+            //             scale: 3
+            //         },
+            //         map: map,
+            //         position: data[i]
+            //     });
+            // }
             sts = data;
     });
 
