@@ -178,3 +178,4 @@ CTestTestfile.cmake
 
 build/
 bin/
+data/

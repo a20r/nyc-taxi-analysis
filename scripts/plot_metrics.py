@@ -34,7 +34,7 @@ caps = [2, 4]
 days = [1, 2]
 waiting_times = [300]
 predictions = [-1, 0, 200, 400]
-fancy_preds = ["No Rebalancing", "Reactive [2]", "200 Samples", "400 Samples"]
+fancy_preds = ["No Rebalancing", "Reactive [1]", "200 Samples", "400 Samples"]
 # predictions = [0, 200, 400]
 # fancy_preds = [0, 200, 400]
 
@@ -150,7 +150,7 @@ def make_pred_plot(df, field):
         else:
             ax.set_xlabel("")
             ax.set_ylabel("")
-    fig.savefig(fig_dir + field + ".pdf", bbox_inches="tight")
+    fig.savefig(fig_dir + field + ".png", bbox_inches="tight")
     return ax.get_legend_handles_labels()[0]
 
 
@@ -163,7 +163,7 @@ def make_legend(handles):
         ncol=4,
         title="Number of Samples", markerscale=1.8, fontsize=14)
     lgd.get_title().set_fontsize(16)
-    fname = fig_dir + "legend.pdf"
+    fname = fig_dir + "legend.png"
     figlegend.savefig(fname, bbox_inches="tight")
     os.system("pdfcrop {0} {0}".format(fname))
 
@@ -171,7 +171,8 @@ def make_legend(handles):
 if __name__ == "__main__":
     sns.set_context("paper", font_scale=1.6)
     big_d = get_big_d(use_cache=True)
-    time_d = pd.read_csv("data/times.csv")
+    # print big_d.query("capacity == 4 and vehicles == 3000 and predictions == 400")["mean_travel_delay"].mean() - big_d.query("capacity == 4 and vehicles == 3000 and predictions == 200")["mean_travel_delay"].mean()
+    # time_d = pd.read_csv("data/times.csv")
     # handles = make_all_pred_plots(big_d, time_d)
-    handles = make_pred_plot(big_d, "mean_waiting_time")
-    make_legend(handles)
+    # handles = make_pred_plot(big_d, "mean_waiting_time")
+    # make_legend(handles)

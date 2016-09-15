@@ -11,6 +11,7 @@ using namespace nanoflann;
 
 const string data_fname = "/home/wallar/fast_data/nyc_taxi_data.csv";
 const string stations_fname = "data/stations.csv";
+const string ts_dir = "data/ts/";
 const int num_rows = 165114362;
 const double earth_radius = 6371;
 
@@ -73,29 +74,23 @@ bool parse_data_line(string line, string &p_dt, double &p_lng, double &p_lat,
     int counter = 0;
     while (getline(line_stream, cell, ','))
     {
-        if (cell.size() == 0)
-        {
-            return false;
-        }
-
         try {
             switch (counter++)
             {
                 case 1: p_dt = cell;
-                case 5: p_lng = stof(cell);
-                case 6: p_lat = stof(cell);
-                case 9: d_lng = stof(cell);
-                case 10: d_lat = stof(cell);
+                case 5: p_lng = stod(cell);
+                case 6: p_lat = stod(cell);
+                case 9: d_lng = stod(cell);
+                case 10: d_lat = stod(cell);
             }
         }
         catch (const invalid_argument &ia)
         {
-            cout << line << endl << endl;
             return false;
         }
     }
 
-    return true;
+    return !(p_lng == 0 or p_lat == 0 or d_lng == 0 or d_lat == 0);
 }
 
 bool parse_stations_line(string line, double &lng, double &lat)
@@ -107,8 +102,8 @@ bool parse_stations_line(string line, double &lng, double &lat)
     {
         switch (counter++)
         {
-            case 1: lng = stof(cell);
-            case 2: lat = stof(cell);
+            case 1: lng = stod(cell);
+            case 2: lat = stod(cell);
         }
     }
 
@@ -133,16 +128,42 @@ GeoPoints load_stations()
     return gps;
 }
 
+size_t get_nearest(kd_tree_t &index, double lng, double lat)
+{
+    size_t ret_index;
+    double out_dist_sqr;
+    KNNResultSet<double> resultSet(1);
+    resultSet.init(&ret_index, &out_dist_sqr);
+    double query_pt[2] = {lng, lat};
+    index.findNeighbors(resultSet, &query_pt[0], SearchParams(10));
+    return ret_index;
+}
+
+string get_ts_fname(size_t p_st, size_t d_st)
+{
+    ostringstream os;
+    os << ts_dir << p_st << "-" << d_st << ".txt";
+    return os.str();
+}
+
+void write_dt(size_t p_st, size_t d_st, string p_dt)
+{
+    ofstream fout;
+    fout.open(get_ts_fname(p_st, d_st), ios_base::app);
+    #pragma omp critical
+    fout << p_dt << endl;
+    fout.close();
+}
+
 void associate_stations(kd_tree_t &index)
 {
     ifstream file(data_fname);
     string l;
     getline(file, l);
-
     boost::progress_display show_progress(num_rows);
 
     #pragma omp parallel for
-    for (int i = 0; i < num_rows; i++)
+    for (int i = 2; i < num_rows; i++)
     {
         string line;
         #pragma omp critical
@@ -150,18 +171,14 @@ void associate_stations(kd_tree_t &index)
 
         string p_dt;
         double p_lng, p_lat, d_lng, d_lat;
-        bool worked = parse_data_line(line, p_dt, p_lng,
-                p_lat, d_lng, d_lat);
-        if (worked)
+        if (parse_data_line(line, p_dt, p_lng, p_lat, d_lng, d_lat))
         {
-            size_t ret_index;
-            double out_dist_sqr;
-            KNNResultSet<double> resultSet(1);
-            resultSet.init(&ret_index, &out_dist_sqr);
-            double query_pt[2] = {p_lng, p_lat};
-            index.findNeighbors(resultSet, &query_pt[0], SearchParams(10));
+            size_t p_st = get_nearest(index, p_lng, p_lat);
+            size_t d_st = get_nearest(index, d_lng, d_lat);
+            // cout << p_st << " " << p_lng << " " << p_lat << endl << endl;
+            // cout << d_st << " " << d_lng << " " << d_lat << endl;
+            write_dt(p_st, d_st, p_dt);
         }
-
         ++show_progress;
     }
 }
@@ -169,7 +186,9 @@ void associate_stations(kd_tree_t &index)
 int main()
 {
     GeoPoints gps = load_stations();
-    kd_tree_t index(2, gps, KDTreeSingleIndexAdaptorParams(10));
+    cout << "Building tree" << endl;
+    kd_tree_t index(2, gps, KDTreeSingleIndexAdaptorParams(1));
     index.buildIndex();
+    cout << "Building timeseries" << endl;
     associate_stations(index);
 }

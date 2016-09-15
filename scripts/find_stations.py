@@ -25,7 +25,7 @@ if __name__ == "__main__":
     nyc_nodes = pd.read_csv(NYC_DIR.format("points"),
                             names=["id", "lat", "lon"])
     nyc_mat = nyc_nodes.as_matrix(["lon", "lat"])
-    stations = find_clusters(nyc_mat, 0.15)
+    stations = find_clusters(nyc_mat, 0.45)
     np.savetxt("data/stations.csv", stations, delimiter=",",
                header="id,lng,lat", fmt=["%d", "%.18f", "%.18f"], comments="")
     print "Stations:", len(stations)
