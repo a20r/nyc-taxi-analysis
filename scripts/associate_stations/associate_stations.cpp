@@ -175,8 +175,6 @@ void associate_stations(kd_tree_t &index)
         {
             size_t p_st = get_nearest(index, p_lng, p_lat);
             size_t d_st = get_nearest(index, d_lng, d_lat);
-            // cout << p_st << " " << p_lng << " " << p_lat << endl << endl;
-            // cout << d_st << " " << d_lng << " " << d_lat << endl;
             write_dt(p_st, d_st, p_dt);
         }
         ++show_progress;
