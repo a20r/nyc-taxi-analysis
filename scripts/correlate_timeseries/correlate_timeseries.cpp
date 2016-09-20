@@ -56,7 +56,8 @@ bool load_ts(size_t p_st, size_t d_st, vector<string> *ts)
 
 bool load_ts(pairwise_ts_t *all_ts)
 {
-    boost::progress_display show_progress(n_stations);
+    boost::progress_display show_progress(
+            n_stations, cout, "\nLoading Timeseries\n", "", "");
 
     #pragma omp parallel for
     for (int i = 0; i < n_stations; i++)
