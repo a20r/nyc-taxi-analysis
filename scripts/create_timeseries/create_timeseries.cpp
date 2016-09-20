@@ -155,7 +155,7 @@ void write_dt(size_t p_st, size_t d_st, string p_dt)
     fout.close();
 }
 
-void associate_stations(kd_tree_t &index)
+void create_timeseries(kd_tree_t &index)
 {
     ifstream file(data_fname);
     string l;
@@ -188,5 +188,5 @@ int main()
     kd_tree_t index(2, gps, KDTreeSingleIndexAdaptorParams(1));
     index.buildIndex();
     cout << "Building timeseries" << endl;
-    associate_stations(index);
+    create_timeseries(index);
 }
