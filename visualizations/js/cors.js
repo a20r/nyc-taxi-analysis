@@ -87,7 +87,7 @@ function initMap() {
             var redPin = getPin("FE7569");
             var bluePin = getPin("ADD8E6");
 
-            var inits = [32, 35, 56, 35];
+            var inits = [47, 35, 42, 21];
 
             // for (var i = 0; i < inits[i]; i++)
             // {
@@ -143,7 +143,7 @@ function initMap() {
             line_1 = new google.maps.Polyline({
                 path: t1,
                 geodesic: true,
-                strokeColor: '#FF0000',
+                strokeColor: '#458B00',
                 strokeOpacity: 1.0,
                 strokeWeight: 2,
                 map: map
@@ -162,11 +162,17 @@ function initMap() {
                     inds.push(getNearest(markers[i].position));
                 }
 
-                var url = "/graph/" + inds.join("/");
+                var cor_url = "/correlation_graph/" + inds.join("/");
+                var bar_url = "/bar_graph/" + inds.join("/");
 
-                $.get(url, function(data) {
-                    $("#graph").html(data);
+                $.get(cor_url, function(data) {
+                    $("#cor").html(data);
                 });
+
+                $.get(bar_url, function(data) {
+                    $("#bar").html(data);
+                });
+
             }
 
             function makeDragCallback(i) {
@@ -183,12 +189,12 @@ function initMap() {
                 markers[i].addListener("drag", makeDragCallback(i));
                 markers[i].addListener("dragend", updatePlot);
             }
-            $(document).ajaxStart(function() {
-                $("#graph").addClass("loading");
-            });
-            $(document).ajaxStop(function() {
-                $("#graph").removeClass("loading");
-            });
+            // $(document).ajaxStart(function() {
+            //     $("#graph").addClass("loading");
+            // });
+            // $(document).ajaxStop(function() {
+            //     $("#graph").removeClass("loading");
+            // });
 
     });
 }

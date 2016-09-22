@@ -5,6 +5,7 @@ import plotly.graph_objs as go
 import pandas as pd
 import scipy.stats as stats
 from flask import Flask, render_template, jsonify, Response
+from plotly import tools
 
 
 app = Flask(__name__, static_folder="visualizations")
@@ -37,8 +38,6 @@ def hist(dts):
 def get_cors(ps0, ds0, ps1, ds1):
     all_ts0 = load_data(ps0, ds0)
     all_ts1 = load_data(ps1, ds1)
-    print len(all_ts0)
-    print len(all_ts1)
     cors = np.zeros((365,))
     ps = np.zeros((365,))
     for i in xrange(365):
@@ -58,7 +57,13 @@ def get_index():
     return render_template("demand.html")
 
 
-def generate_graph_div(ps0, ds0, ps1, ds1):
+def generate_graphs_div(ps0, ds0, ps1, ds1):
+    cor_div = generate_cor_div(ps0, ds0, ps1, ds1)
+    bar_div = generate_bar_div(ps0, ds0, ps1, ds1)
+    return cor_div + "<br>" + bar_div
+
+
+def generate_cor_div(ps0, ds0, ps1, ds1):
     cors, ps = get_cors(ps0, ds0, ps1, ds1)
     cor_scatter = go.Scatter(
         x=range(365), y=cors, mode="markers",
@@ -91,17 +96,50 @@ def generate_graph_div(ps0, ds0, ps1, ds1):
     return graph
 
 
-@app.route("/graph/<ps0>/<ds0>/<ps1>/<ds1>", methods=["GET"])
-def get_graph_div(ps0, ds0, ps1, ds1):
-    return generate_graph_div(ps0, ds0, ps1, ds1)
+def generate_bar_div(ps0, ds0, ps1, ds1):
+    colors = ["rgba(204, 0, 0, 0.7)", "rgba(0, 140, 0, 0.7)"]
+    all_ts0 = load_data(ps0, ds0)
+    all_ts1 = load_data(ps1, ds1)
+
+    bar = go.Bar(
+        x=["{} to {}".format(ps0, ds0), "{} to {}".format(ps1, ds1)],
+        y=[len(all_ts0), len(all_ts1)],
+        marker=dict(color=colors),
+    )
+    layout = go.Layout(
+        title="Yearly Number of Route Trips",
+        xaxis=dict(
+            title="Route"
+        ),
+        yaxis=dict(
+            title="Number of Trips"
+        )
+    )
+
+
+    fig = go.Figure(data=[bar], layout=layout)
+    graph = plotly.offline.plot(fig, include_plotlyjs=False, output_type="div")
+    return graph
+
+
+@app.route("/correlation_graph/<ps0>/<ds0>/<ps1>/<ds1>", methods=["GET"])
+def get_cor_graph_div(ps0, ds0, ps1, ds1):
+    return generate_cor_div(ps0, ds0, ps1, ds1)
+
+
+@app.route("/bar_graph/<ps0>/<ds0>/<ps1>/<ds1>", methods=["GET"])
+def get_bar_graph_div(ps0, ds0, ps1, ds1):
+    return generate_bar_div(ps0, ds0, ps1, ds1)
 
 
 @app.route("/correlations", methods=["GET"])
 def get_correlation_page():
-    ps0, ds0 = 32, 35
-    ps1, ds1 = 56, 35
-    graph = generate_graph_div(ps0, ds0, ps1, ds1)
-    return render_template("correlations.html", graph=graph)
+    ps0, ds0 = 47, 35
+    ps1, ds1 = 42, 21
+    cor_div = generate_cor_div(ps0, ds0, ps1, ds1)
+    bar_div = generate_bar_div(ps0, ds0, ps1, ds1)
+    return render_template("correlations.html", cor=cor_div,
+                           bar=bar_div)
 
 
 @app.route("/stations", methods=["GET"])
