@@ -6,6 +6,7 @@ import pandas as pd
 import scipy.stats as stats
 from flask import Flask, render_template, jsonify, Response
 from plotly import tools
+from datetime import datetime
 
 
 app = Flask(__name__, static_folder="visualizations")
@@ -40,6 +41,7 @@ def get_cors(ps0, ds0, ps1, ds1):
     all_ts1 = load_data(ps1, ds1)
     cors = np.zeros((365,))
     ps = np.zeros((365,))
+    ds = np.zeros((365,), dtype=datetime)
     for i in xrange(365):
         dt = pd.Timedelta("1 day")
         st = pd.Timestamp("2014-01-01 00:00") + i * dt
@@ -49,7 +51,8 @@ def get_cors(ps0, ds0, ps1, ds1):
         ts1 = hist(d1)
         ts2 = hist(d2)
         cors[i], ps[i] = stats.pearsonr(ts1, ts2)
-    return cors, ps
+        ds[i] = st.to_datetime()
+    return cors, ps, ds
 
 
 @app.route("/", methods=["GET"])
@@ -64,14 +67,14 @@ def generate_graphs_div(ps0, ds0, ps1, ds1):
 
 
 def generate_cor_div(ps0, ds0, ps1, ds1):
-    cors, ps = get_cors(ps0, ds0, ps1, ds1)
+    cors, ps, ds = get_cors(ps0, ds0, ps1, ds1)
     cor_scatter = go.Scatter(
-        x=range(365), y=cors, mode="markers",
+        x=ds, y=cors, mode="markers",
         name="Correlation"
     )
 
     p_scatter = go.Scatter(
-        x=range(365), y=ps, mode="markers",
+        x=ds, y=ps, mode="markers",
         name="P-Value"
     )
 

@@ -226,6 +226,39 @@ void save_matrix(double *arr, string fname)
     cnpy::npy_save(fname, arr, shape, 4, "w");
 }
 
+void create_training_data(int p, int d, pairwise_histograms_t *all_hists,
+        int day_start, int day_end,
+        int *X, int *Y)
+{
+    boost::progress_display show_progress(
+            n_stations, cout, "\nCreating Training Data\n", "", "");
+
+    #pragma omp parallel for
+    for (int i = 0; i < n_stations; i++)
+    {
+        for (int j = 0; j < n_stations; j++)
+        {
+            for (int day = day_start; day < day_end; day++)
+            {
+                histogram_t ts = all_hists->at(i)->at(j)->at(day);
+                for (int tr = 0; tr < 3; tr++)
+                {
+                    int index = i * n_stations * (day_end - day_start) * 3;
+                    index += j * (day_end - day_start) * 3;
+                    index += day * 3;
+                    index += tr;
+                    X[index] = ts[tr];
+                }
+            }
+        }
+        ++show_progress;
+    }
+
+    for (int day = day_start; day < day_end; day++)
+    {
+        Y[day] = all_hists->at(p)->at(d)->at(day)[3];
+    }
+}
 
 int main()
 {
