@@ -3,9 +3,11 @@
 #include <vector>
 #include <sstream>
 #include <cmath>
-#include <boost/progress.hpp>
 #include <nanoflann.hpp>
+#include <boost/progress.hpp>
+#include <boost/date_time/posix_time/posix_time.hpp>
 
+using namespace boost::posix_time;
 using namespace std;
 using namespace nanoflann;
 
@@ -66,7 +68,8 @@ typedef KDTreeSingleIndexAdaptor<
     L2_Simple_Adaptor<double, GeoPoints>,
     GeoPoints, 2> kd_tree_t;
 
-bool parse_data_line(string line, string &p_dt, double &p_lng, double &p_lat,
+bool parse_data_line(string line, string &p_dt, string &d_dt,
+        double &p_lng, double &p_lat,
         double &d_lng, double &d_lat)
 {
     stringstream line_stream(line);
@@ -78,6 +81,7 @@ bool parse_data_line(string line, string &p_dt, double &p_lng, double &p_lat,
             switch (counter++)
             {
                 case 1: p_dt = cell;
+                case 2: d_dt = cell;
                 case 5: p_lng = stod(cell);
                 case 6: p_lat = stod(cell);
                 case 9: d_lng = stod(cell);
@@ -146,12 +150,12 @@ string get_ts_fname(size_t p_st, size_t d_st)
     return os.str();
 }
 
-void write_dt(size_t p_st, size_t d_st, string p_dt)
+void write_dt(size_t p_st, size_t d_st, string p_dt, time_duration dur)
 {
     ofstream fout;
     fout.open(get_ts_fname(p_st, d_st), ios_base::app);
     #pragma omp critical
-    fout << p_dt << endl;
+    fout << p_dt << "," << dur.total_seconds() << endl;
     fout.close();
 }
 
@@ -169,13 +173,16 @@ void create_timeseries(kd_tree_t &index)
         #pragma omp critical
         getline(file, line);
 
-        string p_dt;
+        string p_dt, d_dt;
         double p_lng, p_lat, d_lng, d_lat;
-        if (parse_data_line(line, p_dt, p_lng, p_lat, d_lng, d_lat))
+        if (parse_data_line(line, p_dt, d_dt, p_lng, p_lat, d_lng, d_lat))
         {
             size_t p_st = get_nearest(index, p_lng, p_lat);
             size_t d_st = get_nearest(index, d_lng, d_lat);
-            write_dt(p_st, d_st, p_dt);
+            ptime pt = time_from_string(p_dt);
+            ptime dt = time_from_string(d_dt);
+            time_duration dur = dt - pt;
+            write_dt(p_st, d_st, p_dt, dur);
         }
         ++show_progress;
     }
