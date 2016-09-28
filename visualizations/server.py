@@ -16,11 +16,10 @@ n_stations = 101
 
 def load_data(p_st, d_st):
     fname = "data/ts/{}-{}.txt".format(p_st, d_st)
-    df_options = {"names": ["datetime"],
+    df_options = {"names": ["datetime", "duration"],
                   "parse_dates": ["datetime"],
                   "infer_datetime_format": True,
                   "header": None,
-                  "squeeze": True,
                   "skip_blank_lines": True,
                   "index_col": 0}
     df = pd.read_csv(fname, **df_options)

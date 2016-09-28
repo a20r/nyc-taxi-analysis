@@ -27,7 +27,7 @@ class GeoPoint
 class GeoPoints
 {
     public:
-        std::vector<GeoPoint>  pts;
+        std::vector<GeoPoint> pts;
 
         inline size_t kdtree_get_point_count() const
         {
