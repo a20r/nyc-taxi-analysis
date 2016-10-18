@@ -1,6 +1,5 @@
 #! /usr/bin/python
 
-import time
 import warnings
 import tqdm
 import glob
@@ -277,24 +276,28 @@ def convert_to_dataframe(data, folder_info, is_long=0):
     return pandas.DataFrame(data)
 
 
+def determine_step(folder):
+    for step in [10, 20, 40, 50]:
+        if "i%d" % step in folder:
+            return step
+    return 30
+
+
 def extract_metrics(folder, n_vecs, cap, rebalancing, is_long):
     folder_info = FolderInfo(folder.split("/")[-2])
     g_folder = folder + GRAPHS_PREFIX + "/"
     data = defaultdict(list)
-    if is_long == 0:
-        fl = common.MAX_SECONDS / TIME_STEP
-    else:
-        fl = len(os.listdir(g_folder))
+    fl = len(os.listdir(g_folder))
     if SHOW_IND_PROGRESS:
-        preface = "Extracting Metrics (" + g_folder + "): "
-        widgets = [preface, Bar(), Percentage(), "| ", ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=fl).start()
+        preface = "Extracting Metrics (" + g_folder + ")"
         pbar = tqdm.tqdm(total=fl, desc=preface, position=0)
     trip_of_pass_shared = [0] * 1000000
+    step = determine_step(folder)
     for i in xrange(fl):
         try:
             # t = i * TIME_STEP + 1800
-            t = i * TIME_STEP
+            # t = i * TIME_STEP
+            t = i * step
             filename = g_folder + DATA_FILE_TEMPLATE.format(GRAPHS_PREFIX, t)
             with open(filename, "rb") as fstream:
                 fin = StringIO(fstream.read())
@@ -308,7 +311,7 @@ def extract_metrics(folder, n_vecs, cap, rebalancing, is_long):
             if SHOW_IND_PROGRESS:
                 pbar.update(1)
         except IOError:
-            pass
+            print filename
     if SHOW_IND_PROGRESS:
         pbar.close()
     return convert_to_dataframe(data, folder_info, is_long)
@@ -328,8 +331,8 @@ def load_parameters(param_file):
         return params
 
 
-def extract_dataframe_worker(folders):
-    subdir = folders[0] + "/" + folders[1] + "/"
+def extract_dataframe_worker(folder):
+    subdir = folder + "/"
     params = load_parameters(subdir + "parameters.txt")
     n_vehicles = params["NUMBER_VEHICLES"]
     cap = params["maxPassengersVehicle"]
@@ -384,30 +387,18 @@ def get_ready_folders(folder):
     return ret_dirs
 
 
-def extract_all_dataframes(folder):
-    data_dirs = get_ready_folders(folder)
-    preface = "Extracting Metrics"
-    widgets = [preface, Bar(), Percentage(), "| ", ETA()]
-    pbar = ProgressBar(widgets=widgets, maxval=len(data_dirs)).start()
-    counter = 1
-    print data_dirs
-    exit()
+def extract_all_dataframes(data_dirs):
     for data_folder in data_dirs:
         pool = Pool(8)
-        dirs = get_subdirs(folder + data_folder)
-        folder_l = [folder + data_folder] * len(dirs)
-        folders = zip(folder_l, dirs)
+        dirs = glob.glob(data_folder + "/v*")
         dfs = list()
-        print map(lambda v: v[1].split("-")[4], folders)
-        continue
-        for wdf in pool.imap(extract_dataframe_worker, folders):
+        # for dr in dirs:
+        #     dfs.append(extract_dataframe_worker(dr))
+        for wdf in pool.imap(extract_dataframe_worker, dirs):
             dfs.append(wdf)
         df = pandas.concat(dfs)
-        df.to_csv(folder + data_folder + "/metrics_pnas_2.csv")
-        pbar.update(counter)
-        counter += 1
+        df.to_csv(data_folder + "/metrics_pnas.csv")
         pool.close()
-    pbar.finish()
 
 
 def get_dirs_to_process():
@@ -428,7 +419,7 @@ def get_dirs_to_process():
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     NFS_PATH = "/data/drl/mod_sim_data/data-sim/"
-    dirs = get_dirs_to_process()
-    pprint(dirs)
-    # dirs = glob.glob(NFS_PATH + "*p[2|4|6]00*2013*")
-    extract_new_dataframes(dirs)
+    # dirs = glob.glob(NFS_PATH + "v2000-c4-w300-p0-i*")
+    dirs = [NFS_PATH + "v2000-c4-w300-p0-t12",
+            NFS_PATH + "v2000-c4-w300-p0-t19"]
+    extract_all_dataframes(dirs)

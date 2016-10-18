@@ -180,7 +180,7 @@ void construct_histograms(vector<string> *times, vector<int> *durs,
         for (size_t j = 0; j < n_bins; j++)
         {
             durs_hists->at(i)[j] = durs_hists->at(i)[j]
-                / times_hists->at(i)[j];
+                / (times_hists->at(i)[j] + 1);
         }
     }
 }
@@ -271,9 +271,9 @@ int main()
     size_t arr_size = pow(n_stations, 4);
     double *mean_cors = new double[arr_size];
     double *stds = new double[arr_size];
-    compute_all_correlations(times_hists, mean_cors, stds);
-    save_matrix(mean_cors, "data/mean_cors.npy");
-    save_matrix(stds, "data/stds.npy");
+    // compute_all_correlations(times_hists, mean_cors, stds);
+    // save_matrix(mean_cors, "data/mean_cors.npy");
+    // save_matrix(stds, "data/stds.npy");
 
     // Computing correlations
     compute_all_correlations(durs_hists, mean_cors, stds);
